@@ -1,0 +1,135 @@
+/*
+  Global stylesheet — imported once in main.jsx.
+  All CSS classes used across multiple components live here.
+  If a style is only used by one component, it can move into
+  a [ComponentName].css file and be imported there instead.
+  That pattern is called "CSS Modules" and is a natural next step.
+*/
+
+/* ── Reset & base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: #070d1a;
+  color: #dde8f8;
+  min-height: 100vh;
+}
+
+/* ── Layout ───────────────────────────────────────────────── */
+.app       { display: flex; flex-direction: column; min-height: 100vh; }
+.nav       { display: flex; align-items: center; justify-content: space-between;
+             padding: 1rem 2rem; border-bottom: 1px solid #162036; background: #0b1525; }
+.nav-title { font-size: 1.1rem; font-weight: 700; letter-spacing: .05em; color: #7eb8f7; }
+.nav-tabs  { display: flex; gap: .5rem; }
+.nav-tab   { background: none; border: 1px solid transparent; border-radius: 8px;
+             color: #5a7ea8; padding: .45rem 1.1rem; font-family: inherit;
+             font-size: .85rem; cursor: pointer; transition: all .18s; }
+.nav-tab:hover  { color: #dde8f8; border-color: #1e3a5f; }
+.nav-tab.active { background: #0f2847; color: #7eb8f7; border-color: #2563a8; }
+
+.main { flex: 1; padding: 2rem; max-width: 860px; margin: 0 auto; width: 100%; }
+
+/* ── Card flip ────────────────────────────────────────────── */
+.card-scene { perspective: 1200px; width: 100%; max-width: 540px; margin: 0 auto;
+              aspect-ratio: 3/2; cursor: pointer; }
+.card-inner { position: relative; width: 100%; height: 100%;
+              transform-style: preserve-3d; transition: transform .55s cubic-bezier(.4,0,.2,1); }
+.card-inner.flipped { transform: rotateY(180deg); }
+.card-face  { position: absolute; inset: 0; border-radius: 20px;
+              display: flex; align-items: center; justify-content: center;
+              padding: 2rem; text-align: center; backface-visibility: hidden;
+              font-size: 1.7rem; line-height: 1.6; }
+.card-front { background: #0d1e36; border: 1px solid #1e3a5f;
+              box-shadow: 0 8px 40px #00000088; }
+.card-back  { background: #0a1e3d; border: 1px solid #2563a8;
+              transform: rotateY(180deg); box-shadow: 0 8px 40px #00000088; }
+.card-hint  { position: absolute; bottom: 1rem; font-size: .75rem;
+              color: #3a5a80; letter-spacing: .05em; }
+
+/* ── Study view ───────────────────────────────────────────── */
+.study-header  { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+.select        { background: #0d1e36; border: 1px solid #1e3a5f; border-radius: 10px;
+                 color: #dde8f8; padding: .5rem 1rem; font-family: inherit;
+                 font-size: .9rem; cursor: pointer; flex: 1; min-width: 160px; }
+.progress-bar  { height: 4px; background: #162036; border-radius: 4px; margin-bottom: 2rem; overflow: hidden; }
+.progress-fill { height: 100%; background: #2563a8; border-radius: 4px; transition: width .3s; }
+.nav-controls  { display: flex; gap: .75rem; justify-content: center; margin-top: 2rem; }
+.card-counter  { color: #3a5a80; font-size: .85rem; text-align: center; margin-top: 1rem; }
+
+/* ── Buttons ──────────────────────────────────────────────── */
+.btn           { background: #0d1e36; border: 1px solid #1e3a5f; border-radius: 10px;
+                 color: #dde8f8; padding: .6rem 1.4rem; font-family: inherit;
+                 font-size: .9rem; cursor: pointer; transition: all .18s; }
+.btn:hover     { background: #0f2847; border-color: #2563a8; }
+.btn:disabled  { opacity: .35; cursor: default; }
+.btn-primary   { background: #1a4f9c; border-color: #2563a8; color: #fff; }
+.btn-primary:hover { background: #1f5db5; }
+.btn-danger    { background: #2a1010; border-color: #6b2020; color: #f87171; }
+.btn-danger:hover  { background: #3a1818; border-color: #ef4444; }
+.btn-full      { width: 100%; margin-top: .4rem; padding: .75rem; font-size: .95rem; }
+
+/* ── Empty states ─────────────────────────────────────────── */
+.empty { text-align: center; padding: 3rem; color: #3a5a80; line-height: 2; }
+
+/* ── Admin view ───────────────────────────────────────────── */
+.admin-layout { display: grid; grid-template-columns: 220px 1fr; gap: 1.5rem; }
+@media (max-width: 580px) { .admin-layout { grid-template-columns: 1fr; } }
+
+.panel       { background: #0b1525; border: 1px solid #162036; border-radius: 16px;
+               padding: 1.2rem; overflow: hidden; }
+.panel-title { font-size: .8rem; font-weight: 700; letter-spacing: .1em;
+               color: #3a5a80; text-transform: uppercase; margin-bottom: 1rem; }
+
+.deck-item        { display: flex; align-items: center; gap: .5rem; padding: .6rem .8rem;
+                    border-radius: 10px; cursor: pointer; transition: background .15s; margin-bottom: .3rem; }
+.deck-item:hover  { background: #0d1e36; }
+.deck-item.active { background: #0f2847; }
+.deck-item span   { flex: 1; font-size: .9rem; min-width: 0; overflow: hidden;
+                    text-overflow: ellipsis; white-space: nowrap; }
+.deck-item .count { font-size: .75rem; color: #3a5a80; flex-shrink: 0; }
+.deck-del         { background: none; border: none; color: #3a5a80; cursor: pointer;
+                    font-size: 1rem; padding: 2px 4px; border-radius: 4px; line-height: 1; flex-shrink: 0; }
+.deck-del:hover   { color: #f87171; }
+
+.input-row { display: flex; gap: .5rem; margin-bottom: 1rem; }
+.input     { background: #0d1e36; border: 1px solid #1e3a5f; border-radius: 10px;
+             color: #dde8f8; padding: .55rem .9rem; font-family: inherit;
+             font-size: .9rem; flex: 1; min-width: 0; outline: none;
+             transition: border .15s; width: 100%; }
+.input:focus { border-color: #2563a8; }
+
+.card-list-item         { background: #0d1e36; border: 1px solid #162036; border-radius: 12px;
+                          padding: 1rem; margin-bottom: .7rem; }
+.card-list-item .front  { font-size: 1rem; margin-bottom: .4rem; }
+.card-list-item .back   { font-size: .85rem; color: #5a7ea8; }
+.card-list-item .actions { display: flex; gap: .4rem; margin-top: .7rem; justify-content: flex-end; }
+
+.form-group    { margin-bottom: .8rem; }
+.form-label    { font-size: .8rem; color: #3a5a80; margin-bottom: .3rem; display: block; }
+textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+.badge { display: inline-block; background: #0f2847; color: #7eb8f7;
+         font-size: .72rem; padding: 2px 8px; border-radius: 6px; }
+
+/* ── Auth screen ──────────────────────────────────────────── */
+.auth-wrap  { display: flex; align-items: center; justify-content: center;
+              min-height: 100vh; padding: 1.5rem; }
+.auth-box   { background: #0b1525; border: 1px solid #162036; border-radius: 20px;
+              padding: 2.5rem 2rem; width: 100%; max-width: 360px; }
+.auth-title { font-size: 1.5rem; font-weight: 700; color: #7eb8f7;
+              text-align: center; margin-bottom: .4rem; }
+.auth-sub   { font-size: .85rem; color: #3a5a80; text-align: center; margin-bottom: 2rem; }
+.auth-toggle { text-align: center; margin-top: 1.2rem; font-size: .85rem; color: #3a5a80; }
+.auth-toggle button { background: none; border: none; color: #7eb8f7; cursor: pointer;
+                      font-family: inherit; font-size: .85rem; text-decoration: underline; }
+.auth-error { background: #2a1010; border: 1px solid #6b2020; border-radius: 8px;
+              color: #f87171; font-size: .82rem; padding: .6rem .9rem; margin-bottom: 1rem; }
+.auth-info  { background: #0a1e3d; border: 1px solid #1e3a5f; border-radius: 8px;
+              color: #7eb8f7; font-size: .82rem; padding: .6rem .9rem; margin-bottom: 1rem; }
+
+/* ── Spinner ──────────────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { display: inline-block; width: 18px; height: 18px;
+           border: 2px solid #1e3a5f; border-top-color: #7eb8f7;
+           border-radius: 50%; animation: spin 0.8s linear infinite; }
