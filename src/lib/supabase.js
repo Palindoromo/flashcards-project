@@ -80,7 +80,10 @@ export async function fetchDecks(token) {
 export async function upsertDeck(deck, token) {
   const res = await fetch(`${BASE}/decks?on_conflict=id`, {
     method: 'POST',
-    headers: authedHeaders(token),
+    headers: {
+      ...authedHeaders(token),
+      'Prefer': 'return=representation,resolution=merge-duplicates',
+    },
     body: JSON.stringify({
       id:      deck.id,
       name:    deck.name,
