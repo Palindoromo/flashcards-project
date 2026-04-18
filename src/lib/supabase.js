@@ -20,7 +20,7 @@ console.log('KEY:', import.meta.env.VITE_SUPABASE_KEY);
 // Replace these with your values from:
 // Supabase dashboard → Project Settings → API
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-export const SUPABASE_KEY = import.meta.env.VITE_SPABASE_KEY;
+export const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 
 const BASE = `${SUPABASE_URL}/rest/v1`;
 const AUTH = `${SUPABASE_URL}/auth/v1`;
