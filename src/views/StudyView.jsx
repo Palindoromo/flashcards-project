@@ -1,38 +1,77 @@
 /*
   src/views/StudyView.jsx
   ─────────────────────────────────────────────────────────────
-  The study screen. Receives the deck list from App as a prop
-  and manages its own local navigation state (which deck, which
-  card index). It imports FlashCard from components/ because
-  that's a reusable piece, not a view.
+  Study screen with a persistent shuffle mode toggle.
+
+  SHUFFLE MODE LOGIC:
+  When shuffle is off, `cards` is just deck.cards in original order.
+  When shuffle is on, we keep a separate `shuffledCards` array in
+  state. This array is generated once when shuffle is enabled, and
+  stays fixed until the user disables shuffle or changes deck —
+  so Prev/Next navigate through a stable shuffled order, not a
+  random new order on every click.
+
+  We use a Fisher-Yates shuffle to randomise the array:
+  it works by iterating backwards and swapping each element
+  with a random earlier element. This guarantees every possible
+  order is equally likely.
 */
 
 import { useState, useEffect } from 'react';
 import FlashCard from '../components/FlashCard';
 
+// Fisher-Yates shuffle — returns a new shuffled array,
+// never mutates the original.
+function shuffleArray(arr) {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 export default function StudyView({ decks }) {
   const [selectedDeckId, setSelectedDeckId] = useState(null);
-  const [cardIndex, setCardIndex] = useState(0);
+  const [cardIndex, setCardIndex]           = useState(0);
+  const [shuffleOn, setShuffleOn]           = useState(false);
+  const [shuffledCards, setShuffledCards]   = useState([]);
 
-  // Derived state — computed from props and local state.
-  // Never duplicated into separate useState calls.
-  const deck  = decks.find(d => d.id === selectedDeckId) || null;
-  const cards = deck ? deck.cards : [];
+  const deck        = decks.find(d => d.id === selectedDeckId) || null;
+  const sourceCards = deck ? deck.cards : [];
+
+  // The active card list: shuffled version or original, depending on mode.
+  const cards = shuffleOn ? shuffledCards : sourceCards;
   const total = cards.length;
   const card  = cards[cardIndex] || null;
 
-  // Reset card position when the selected deck changes.
-  useEffect(() => { setCardIndex(0); }, [selectedDeckId]);
+  // Reset position when the deck changes.
+  useEffect(() => {
+    setCardIndex(0);
+    setShuffleOn(false);
+    setShuffledCards([]);
+  }, [selectedDeckId]);
 
-  // Auto-select the first deck when decks load.
+  // Auto-select first deck on load.
   useEffect(() => {
     if (!selectedDeckId && decks.length > 0) {
       setSelectedDeckId(decks[0].id);
     }
   }, [decks]);
 
+  // When shuffle is toggled on: generate a shuffled copy and reset to
+  // card 0. When toggled off: go back to original order from card 0.
+  function toggleShuffle() {
+    if (!shuffleOn) {
+      setShuffledCards(shuffleArray(sourceCards));
+    }
+    setCardIndex(0);
+    setShuffleOn(s => !s);
+  }
+
   return (
     <div>
+      {/* ── Deck selector ────────────────────────────────────── */}
       <div className="study-header">
         <select
           className="select"
@@ -48,6 +87,36 @@ export default function StudyView({ decks }) {
         </select>
       </div>
 
+      {/*
+        Shuffle toggle — only shown when a deck with more than one
+        card is selected. Placed below the selector so it reads as
+        a setting for the current deck, not an action button.
+
+        CONCEPT: accessible toggle.
+        We use a <button> with role="switch" and aria-checked so
+        screen readers announce it as a toggle, not a plain button.
+        The visual is two divs (track + thumb) animated with CSS.
+      */}
+     {deck && sourceCards.length > 1 && (
+  <div className="shuffle-row">
+    <span className="shuffle-label" onClick={toggleShuffle}>
+      Shuffle
+    </span>
+    <button
+      className={`toggle-track ${shuffleOn ? 'on' : ''}`}
+      role="switch"
+      aria-checked={shuffleOn}
+      onClick={toggleShuffle}
+    >
+      <div className="toggle-thumb" />
+    </button>
+    <span className="shuffle-label" onClick={toggleShuffle}>
+      {shuffleOn ? 'On' : 'Off'}
+    </span>
+  </div>
+)}
+
+      {/* ── Empty states ─────────────────────────────────────── */}
       {decks.length === 0 && (
         <div className="empty">
           No decks yet.<br />Go to <strong>Manage</strong> to create one.
@@ -59,32 +128,32 @@ export default function StudyView({ decks }) {
 
       {card && (
         <>
-          <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{ width: `${((cardIndex + 1) / total) * 100}%` }}
-            />
-          </div>
-
           {/*
-            The `key` prop forces React to create a fresh FlashCard
-            instance when the card changes, so the flip state resets.
+            Progress bar: only shown when shuffle is OFF.
+            In shuffle mode, position in the deck is arbitrary,
+            so a progress bar would be misleading.
           */}
+          
+            <div className="progress-bar">
+              <div
+                className="progress-fill"
+                style={{ width: `${((cardIndex + 1) / total) * 100}%` }}
+              />
+            </div>
+          
+
           <FlashCard card={card} key={card.id} />
 
+          {/* Counter: shows position in shuffle or in original deck */}
           <p className="card-counter">{cardIndex + 1} / {total}</p>
 
+          {/* ── Navigation controls ──────────────────────────── */}
           <div className="nav-controls">
             <button
               className="btn"
               onClick={() => setCardIndex(i => i - 1)}
               disabled={cardIndex === 0}
             >← Prev</button>
-
-            <button
-              className="btn btn-primary"
-              onClick={() => setCardIndex(Math.floor(Math.random() * total))}
-            >Shuffle</button>
 
             <button
               className="btn"
