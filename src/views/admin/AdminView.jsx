@@ -1,40 +1,82 @@
 /*
   src/views/admin/AdminView.jsx
   ─────────────────────────────────────────────────────────────
-  The management screen. Shows the deck list on the left and
-  CardEditor on the right. Receives decks + onUpdateDecks from
-  App — it never calls Supabase directly, it delegates upward.
+  Redesigned admin screen with:
+  - Horizontal scrollable deck tabs + a + button to add decks
+  - Inline input that appears next to tabs when + is clicked
+  - New card form always visible at the top
+  - List / grid view toggle for the card list
 
-  When a deck is added, edited, or deleted, it builds the new
-  decks array and calls onUpdateDecks(newDecks). App then
-  handles the Supabase sync.
+  Layout overview:
+  ┌─────────────────────────────────────────┐
+  │ [+] [Deck A] [Deck B] [Deck C] →scroll  │  ← tab bar
+  ├─────────────────────────────────────────┤
+  │ New card form (always visible)          │
+  ├─────────────────────────────────────────┤
+  │ Cards heading          [≡ list][⊞ grid] │  ← view toggle
+  │ card · card · card · card …             │
+  └─────────────────────────────────────────┘
 */
 
-import { useState, useEffect } from 'react';
-import { uid } from '../../lib/supabase';
-import CardEditor from './CardEditor';
+import { useState, useEffect, useRef } from "react";
+import { uid } from "../../lib/supabase";
+import CardEditor from "./CardEditor";
+
+// ── Icons ─────────────────────────────────────────────────────
+
+function DeleteIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="var(--text-faint)" strokeWidth="2.5" strokeLinecap="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
 
 export default function AdminView({ decks, onUpdateDecks, userId }) {
   const [selectedDeckId, setSelectedDeckId] = useState(null);
-  const [newDeckName, setNewDeckName]       = useState('');
+  const [cardView, setCardView]             = useState("list"); // "list" | "grid"
+
+  // Inline deck creation state
+  const [addingDeck, setAddingDeck] = useState(false);
+  const [newDeckName, setNewDeckName] = useState("");
+  const newDeckInputRef = useRef(null);
 
   const deck = decks.find(d => d.id === selectedDeckId) || null;
 
-  // Auto-select the first deck when the list loads.
+  // Auto-select first deck on load.
   useEffect(() => {
     if (!selectedDeckId && decks.length > 0) {
       setSelectedDeckId(decks[0].id);
     }
   }, [decks]);
 
-  function addDeck() {
-    if (!newDeckName.trim()) return;
-    // user_id is attached here so upsertDeck can send it to Supabase,
-    // satisfying the RLS "owner insert" policy.
+  // Focus the inline input as soon as it appears.
+  useEffect(() => {
+    if (addingDeck) newDeckInputRef.current?.focus();
+  }, [addingDeck]);
+
+  function startAddingDeck() {
+    setAddingDeck(true);
+    setNewDeckName("");
+  }
+
+  function confirmAddDeck() {
+    if (!newDeckName.trim()) {
+      setAddingDeck(false);
+      return;
+    }
     const newDeck = { id: uid(), name: newDeckName.trim(), cards: [], user_id: userId };
     onUpdateDecks([...decks, newDeck]);
-    setNewDeckName('');
     setSelectedDeckId(newDeck.id);
+    setAddingDeck(false);
+    setNewDeckName("");
+  }
+
+  function cancelAddDeck() {
+    setAddingDeck(false);
+    setNewDeckName("");
   }
 
   function deleteDeck(id) {
@@ -43,67 +85,84 @@ export default function AdminView({ decks, onUpdateDecks, userId }) {
     if (selectedDeckId === id) setSelectedDeckId(updated[0]?.id || null);
   }
 
-  // Called by CardEditor when a card is added/edited/deleted.
-  // We receive the whole updated deck and splice it into the list.
   function updateDeck(updatedDeck) {
     onUpdateDecks(decks.map(d => d.id === updatedDeck.id ? updatedDeck : d));
   }
 
   return (
-    <div className="admin-layout">
-      {/* ── Left: deck list ──────────────────────────────────── */}
-      <div>
-        <div className="panel" style={{ marginBottom: '1rem' }}>
-          <div className="panel-title">Decks</div>
+    <div className="admin-new-layout">
 
+      {/* ── Tab bar ──────────────────────────────────────────── */}
+      <div className="deck-tab-bar">
+
+        {/* + button — fixed on the left, outside the scroll area */}
+        <button
+          className="deck-tab-add"
+          onClick={startAddingDeck}
+          title="New deck"
+          aria-label="Add new deck"
+        >+</button>
+
+        {/* Scrollable tab list */}
+        <div className="deck-tab-scroll">
           {decks.map(d => (
             <div
               key={d.id}
-              className={`deck-item ${d.id === selectedDeckId ? 'active' : ''}`}
+              className={"deck-tab" + (d.id === selectedDeckId ? " active" : "")}
               onClick={() => setSelectedDeckId(d.id)}
             >
-              <span>{d.name}</span>
-              <span className="count">{d.cards.length}</span>
+              <span className="deck-tab-name">{d.name}</span>
+              <span className="deck-tab-count">{d.cards.length}</span>
               <button
-                className="deck-del"
-                title="Delete deck"
+                className="deck-tab-del"
                 onClick={e => { e.stopPropagation(); deleteDeck(d.id); }}
-              >×</button>
+                title="Delete deck"
+                aria-label={"Delete " + d.name}
+              >
+                <DeleteIcon />
+              </button>
             </div>
           ))}
 
-          {decks.length === 0 && (
-            <div style={{ color: '#3a5a80', fontSize: '.85rem' }}>No decks yet.</div>
+          {/* Inline input — slides in after the last tab */}
+          {addingDeck && (
+            <div className="deck-tab-input-wrap">
+              <input
+                ref={newDeckInputRef}
+                className="deck-tab-input"
+                placeholder="Deck name…"
+                value={newDeckName}
+                onChange={e => setNewDeckName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter")  confirmAddDeck();
+                  if (e.key === "Escape") cancelAddDeck();
+                }}
+                onBlur={confirmAddDeck}
+              />
+            </div>
           )}
         </div>
+      </div>
 
-        {/* New deck form */}
-        <div className="panel">
-          <div className="panel-title">New deck</div>
-          <div className="input-row">
-            <input
-              className="input"
-              placeholder="Deck name…"
-              value={newDeckName}
-              onChange={e => setNewDeckName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && addDeck()}
-            />
-          </div>
-          <button
-            className="btn btn-primary"
-            style={{ width: '100%' }}
-            onClick={addDeck}
-          >Create</button>
+      {/* ── Content area ─────────────────────────────────────── */}
+      {decks.length === 0 && (
+        <div className="empty">
+          No decks yet.<br />Press <strong>+</strong> to create your first one.
         </div>
-      </div>
+      )}
 
-      {/* ── Right: card editor ───────────────────────────────── */}
-      <div>
-        {deck
-          ? <CardEditor deck={deck} onSave={updateDeck} />
-          : <div className="empty">Select or create a deck to manage its cards.</div>
-        }
-      </div>
+      {deck && (
+        <CardEditor
+          deck={deck}
+          onSave={updateDeck}
+          cardView={cardView}
+          onCardViewChange={setCardView}
+        />
+      )}
+
+      {!deck && decks.length > 0 && (
+        <div className="empty">Select a deck to manage its cards.</div>
+      )}
     </div>
   );
 }
