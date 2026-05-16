@@ -382,3 +382,4 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
 .card-grid-back    { font-size: .85rem; text-align: center; color: var(--text-muted);
                      padding: .25rem 0; flex: 1; }
 .card-grid-actions { display: flex; gap: .4rem; justify-content: center; margin-top: .25rem; }
+.icon-btn-dot.visible { opacity: 1; }
